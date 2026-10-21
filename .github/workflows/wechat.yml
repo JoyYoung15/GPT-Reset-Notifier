@@ -1,7 +1,7 @@
 name: WeChat Reset Monitor
 on:
   schedule:
-    - cron: '2-57/5 * * * *'
+    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   workflow_dispatch:
     inputs:
       send_test:
@@ -18,6 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Record trigger metadata
+        env:
+          TRIGGER_EVENT: ${{ github.event_name }}
+          TRIGGER_CRON: ${{ github.event.schedule }}
+        run: |
+          printf 'event=%s cron=%s\n' "$TRIGGER_EVENT" "$TRIGGER_CRON"
+          date -u '+started_utc=%Y-%m-%dT%H:%M:%SZ'
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
