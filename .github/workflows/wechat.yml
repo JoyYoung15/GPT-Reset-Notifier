@@ -1,0 +1,33 @@
+name: WeChat Reset Monitor
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+    inputs:
+      send_test:
+        description: '发送一条标明为测试的微信消息（消耗 1 条推送额度）'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: wechat-reset-monitor
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - run: npm test
+      - name: Check source and notify WeChat
+        run: node monitor.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+          SEND_TEST: ${{ inputs.send_test == true && 'true' || 'false' }}
