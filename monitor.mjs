@@ -87,7 +87,8 @@ async function request(url, options = {}) {
   catch { throw new Error('Network request failed or timed out (URL and credentials omitted).'); }
 }
 
-async function githubStore() {
+export async function githubStore(statePath = STATE_PATH, allowMissingState = false) {
+  if (![STATE_PATH, '.feishu-state.json'].includes(statePath)) throw new Error('Unsupported state path.');
   const repo = process.env.GITHUB_REPOSITORY;
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo || '') || !process.env.GITHUB_TOKEN) throw new Error('Run from GitHub Actions with its repository token.');
   const base = `https://api.github.com/repos/${repo}`;
@@ -102,10 +103,12 @@ async function githubStore() {
   let branchExists = !!(await api(`/git/ref/heads/${STATE_BRANCH}`));
   let state = null;
   if (branchExists) {
-    const file = await api(`/contents/${STATE_PATH}?ref=${STATE_BRANCH}`);
-    if (!file) throw new Error('State branch exists but state file is missing. Restore it before resuming.');
-    sha = file.sha;
-    state = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
+    const file = await api(`/contents/${statePath}?ref=${STATE_BRANCH}`);
+    if (!file && !allowMissingState) throw new Error('State branch exists but state file is missing. Restore it before resuming.');
+    if (file) {
+      sha = file.sha;
+      state = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
+    }
   }
   return { state, async save(value) {
     if (!branchExists) {
@@ -113,7 +116,7 @@ async function githubStore() {
       await api('/git/refs', 'POST', { ref: `refs/heads/${STATE_BRANCH}`, sha: process.env.GITHUB_SHA });
       branchExists = true;
     }
-    const result = await api(`/contents/${STATE_PATH}`, 'PUT', {
+    const result = await api(`/contents/${statePath}`, 'PUT', {
       message: 'Save notification checkpoint', branch: STATE_BRANCH,
       content: Buffer.from(JSON.stringify(value, null, 2) + '\n').toString('base64'), ...(sha ? { sha } : {})
     });

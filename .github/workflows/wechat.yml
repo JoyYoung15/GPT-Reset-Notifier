@@ -14,6 +14,10 @@ on:
         description: '发送一条标明为测试的微信消息（消耗 1 条推送额度）'
         type: boolean
         default: false
+      send_feishu_test:
+        description: '发送一条标明为测试的飞书消息（不发送微信测试）'
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -40,9 +44,18 @@ jobs:
         with:
           node-version: '22'
       - run: npm test
+        id: tests
       - name: Check source and notify WeChat
         run: node monitor.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
           SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
           SEND_TEST: ${{ inputs.send_test == true && 'true' || 'false' }}
+      - name: Check source and notify Feishu
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        run: node feishu.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          FEISHU_SIGNING_SECRET: ${{ secrets.FEISHU_SIGNING_SECRET }}
+          SEND_FEISHU_TEST: ${{ inputs.send_feishu_test == true && 'true' || 'false' }}

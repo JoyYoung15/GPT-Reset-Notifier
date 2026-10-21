@@ -1,6 +1,14 @@
-# GPT / Codex 重置微信提醒
+# GPT / Codex 重置微信与飞书提醒
 
-GitHub Actions 每 15 分钟检查 AIHOT 的公开 Tibo 重置消息，使用 Server酱 Turbo 向个人微信推送。无需服务器、OpenAI API Key 或模型付费调用。
+Cloudflare 定时器每 5 分钟启动 GitHub Actions，检查 AIHOT 的公开 Tibo 重置消息，使用 Server酱 Turbo 向个人微信推送，并可同时通过自定义机器人推送到飞书群。原 GitHub cron 保留作为后备。无需电脑开机、OpenAI API Key 或模型付费调用；采集和运行可能延迟，不保证即时送达。
+
+## 飞书接入
+
+在接收群创建自定义机器人并启用签名校验，在本仓库 Actions secrets 保存 `FEISHU_WEBHOOK_URL` 和 `FEISHU_SIGNING_SECRET`。无需修改 Cloudflare。两项均未配置时跳过飞书；只配置一项会报错。
+
+飞书使用 `notifier-state` 分支中的 `.feishu-state.json`，与微信记录独立。首次运行建立历史基线，不补发历史；两渠道互不消耗发送额度，单个渠道失败不阻止另一个渠道尝试。同一频道发送不确定时抑制自动重试，避免重复提醒。每个渠道每日最多 4 次自动推送，另留 1 次手动测试。
+
+Actions → WeChat Reset Monitor → Run workflow 中勾选“发送一条标明为测试的飞书消息”，保持微信测试不勾选。飞书 API 接受后仍应在群内确认收到。没有新消息时，两个渠道都不发送例行汇总。运行名称 `Cloudflare check ...` 及日志中的 `cloudflare_scheduled_at` 可用于核对自动触发。
 
 ## 配置
 
@@ -14,7 +22,7 @@ GitHub Actions 每 15 分钟检查 AIHOT 的公开 Tibo 重置消息，使用 Se
 - 来源为 https://aihot.news/api/v1/codex-resets 。这是第三方整理，非 OpenAI 官方接口；程序不会直接核验 X，也不独立核验 AIHOT 的分类。
 - 读取关联重置事件的 announce / confirm / amend / cancel 消息，保留原帖、北京时间和未知范围。
 - 只有 Tibo 自己正文中的明确英文不确定重置表述，才额外作为“可能”提示。此规则不能理解所有暗示，可能漏报；普通相关回复、社区祈愿和模型预测不会触发。
-- 仅覆盖该接口收录的 Tibo 信息，尚未覆盖其他 OpenAI 成员及所有官方渠道。原 Codex 定时监测可以继续作为补充。
+- 仅覆盖该接口收录的 Tibo 信息，尚未覆盖其他 OpenAI 成员及所有官方渠道。原 Codex 对话定时监测已停止。
 - “来源称已完成”不等于自己的账号已到账。具体计划、窗口和资格以原文及账号显示为准。
 - 首次运行不推历史；启动之后新发布的消息才触发，留 5 分钟重叠处理采集延迟。接口历史回填不会突然群发。
 - 按原帖 ID、动作、原文内容去重。中文翻译变动不重复提醒。
