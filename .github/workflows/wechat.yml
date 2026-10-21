@@ -1,9 +1,15 @@
 name: WeChat Reset Monitor
+run-name: ${{ inputs.scheduler_time && format('Cloudflare check {0}', inputs.scheduler_time) || 'WeChat Reset Monitor' }}
 on:
   schedule:
     - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   workflow_dispatch:
     inputs:
+      scheduler_time:
+        description: 'Cloudflare scheduled time (leave blank for manual runs)'
+        type: string
+        required: false
+        default: ''
       send_test:
         description: '发送一条标明为测试的微信消息（消耗 1 条推送额度）'
         type: boolean
@@ -22,8 +28,10 @@ jobs:
         env:
           TRIGGER_EVENT: ${{ github.event_name }}
           TRIGGER_CRON: ${{ github.event.schedule }}
+          SCHEDULER_TIME: ${{ inputs.scheduler_time }}
         run: |
           printf 'event=%s cron=%s\n' "$TRIGGER_EVENT" "$TRIGGER_CRON"
+          printf 'cloudflare_scheduled_at=%s\n' "$SCHEDULER_TIME"
           date -u '+started_utc=%Y-%m-%dT%H:%M:%SZ'
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
