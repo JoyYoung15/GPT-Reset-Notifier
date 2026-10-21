@@ -50,6 +50,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+          SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
           SEND_TEST: ${{ inputs.send_test == true && 'true' || 'false' }}
       - name: Check source and notify Feishu
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
@@ -58,4 +59,5 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           FEISHU_SIGNING_SECRET: ${{ secrets.FEISHU_SIGNING_SECRET }}
+          SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
           SEND_FEISHU_TEST: ${{ inputs.send_feishu_test == true && 'true' || 'false' }}

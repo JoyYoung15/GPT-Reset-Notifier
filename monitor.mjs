@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import { readFile, writeFile } from 'node:fs/promises';
 
 const SOURCE = 'https://aihot.news/api/v1/codex-resets';
 const STATE_BRANCH = 'notifier-state';
@@ -25,6 +26,18 @@ export function validate(data, now = Date.now()) {
         || typeof p.originalText !== 'string' || typeof p.text !== 'string') throw new Error('Invalid source post; checkpoint unchanged.');
     ids.add(p.id);
   }
+  return data;
+}
+
+export async function loadSource(snapshotPath = process.env.SOURCE_SNAPSHOT, fetcher = request) {
+  if (snapshotPath) {
+    try { return validate(JSON.parse(await readFile(snapshotPath, 'utf8'))); }
+    catch (error) { if (error.code !== 'ENOENT') throw new Error('Invalid shared source snapshot; refusing notification.'); }
+  }
+  const response = await fetcher(SOURCE, { headers: { 'User-Agent': 'GPT-Reset-Notifier/1.0 (+https://github.com/JoyYoung15/GPT-Reset-Notifier)' } });
+  if (!response.ok) throw new Error(`Source HTTP ${response.status}; no notification or checkpoint advance.`);
+  const data = validate(await response.json());
+  if (snapshotPath) await writeFile(snapshotPath, JSON.stringify(data), {mode:0o600});
   return data;
 }
 
@@ -145,9 +158,7 @@ export async function deliver(state, items, save, send, isTest = false) {
 export async function main() {
   const key = process.env.SERVERCHAN_SENDKEY?.trim();
   if (!/^SCT[A-Za-z0-9]+$/.test(key || '')) throw new Error('Set SERVERCHAN_SENDKEY to your ServerChan Turbo SCT key in repository Actions secrets.');
-  const response = await request(SOURCE, { headers: { 'User-Agent': 'GPT-Reset-Notifier/1.0 (+https://github.com/JoyYoung15/GPT-Reset-Notifier)' } });
-  if (!response.ok) throw new Error(`Source HTTP ${response.status}; no notification or checkpoint advance.`);
-  const data = validate(await response.json());
+  const data = await loadSource();
   const storage = await githubStore();
   const { state, pending, baseline } = plan(data, storage.state);
   const send = async (title, desp) => {

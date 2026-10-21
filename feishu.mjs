@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { plan, message, deliver, githubStore } from './monitor.mjs';
+import { plan, message, deliver, githubStore, loadSource } from './monitor.mjs';
 
 export function configuration(env) {
   const url = env.FEISHU_WEBHOOK_URL?.trim();
@@ -41,11 +41,7 @@ export async function sendFeishu(config, title, text, fetcher = fetch, now = Dat
 export async function main() {
   const config = configuration(process.env);
   if (!config) { console.log('Feishu not configured; skipped.'); return; }
-  const response = await fetch('https://aihot.news/api/v1/codex-resets', {
-    redirect: 'error', signal: AbortSignal.timeout(25000), headers: { 'User-Agent': 'GPT-Reset-Notifier/1.0' }
-  }).catch(() => { throw new Error('Feishu source request failed.'); });
-  if (!response.ok) throw new Error(`Feishu source HTTP ${response.status}.`);
-  const data = await response.json();
+  const data = await loadSource();
   // Separate checkpoint: success/failure and test budgets never affect WeChat delivery.
   const storage = await githubStore('.feishu-state.json', true);
   const {state, pending, baseline} = plan(data, storage.state);

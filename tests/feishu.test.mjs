@@ -2,8 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import { configuration, payload, sendFeishu } from '../feishu.mjs';
-import { plan, deliver } from '../monitor.mjs';
+import { plan, deliver, loadSource } from '../monitor.mjs';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 const config = { url: 'https://open.feishu.cn/open-apis/bot/v2/hook/test-placeholder', secret: 'test-secret' };
+
+test('both channels reuse one validated source request and reject stale shared snapshots', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'reset-source-test-'));
+  const path = join(dir, 'source.json');
+  let calls = 0;
+  const now = new Date().toISOString();
+  const data = {schemaVersion:1,checkedAt:now,monitor:{status:'healthy',lastCollectedAt:now},events:[],activities:[]};
+  const fetcher = async () => {calls++; return new Response(JSON.stringify(data));};
+  try {
+    assert.deepEqual(await loadSource(path, fetcher), data);
+    assert.deepEqual(await loadSource(path, fetcher), data);
+    assert.equal(calls, 1);
+    await writeFile(path, JSON.stringify({...data,monitor:{status:'healthy',lastCollectedAt:'2020-01-01T00:00:00Z'}}));
+    await assert.rejects(loadSource(path, fetcher), /Invalid shared source/);
+    assert.equal(calls, 1);
+  } finally { await rm(dir, {recursive:true,force:true}); }
+});
 
 test('Feishu is optional; incomplete config and non-Feishu destinations fail closed', () => {
   assert.equal(configuration({}), null);
