@@ -4,6 +4,10 @@ Cloudflare 定时器每 5 分钟启动 GitHub Actions，检查 AIHOT 的公开 T
 
 ## 飞书接入
 
+支持公司群和个人群同时接收。公司群保留 `FEISHU_WEBHOOK_URL`、`FEISHU_SIGNING_SECRET`；个人群新增 `FEISHU_PERSONAL_WEBHOOK_URL`、`FEISHU_PERSONAL_SIGNING_SECRET`。个人群使用独立 `.feishu-personal-state.json`，首次接入不补发历史；三个渠道共用本轮消息源快照，每个渠道分别去重、计算每日限额。某一渠道失败仍会继续检查其他渠道。
+
+测试个人群时，只勾选 `send_feishu_personal_test`（“只向个人飞书群发送一条测试消息”），微信测试和公司群测试均保持关闭。Cloudflare 定时运行不启用任何测试开关。
+
 在接收群创建自定义机器人并启用签名校验，在本仓库 Actions secrets 保存 `FEISHU_WEBHOOK_URL` 和 `FEISHU_SIGNING_SECRET`。无需修改 Cloudflare。两项均未配置时跳过飞书；只配置一项会报错。
 
 飞书使用 `notifier-state` 分支中的 `.feishu-state.json`，与微信记录独立。首次运行建立历史基线，不补发历史；两渠道互不消耗发送额度，单个渠道失败不阻止另一个渠道尝试。同一频道发送不确定时抑制自动重试，避免重复提醒。每个渠道每日最多 4 次自动推送，另留 1 次手动测试。

@@ -38,29 +38,39 @@ export async function sendFeishu(config, title, text, fetcher = fetch, now = Dat
   if (result.code !== 0) throw new Error(`Feishu rejected message (code ${Number.isInteger(result.code) ? result.code : 'unknown'}).`);
 }
 
+export function channelSettings(channel = 'company') {
+  if (channel === 'company') return {statePath:'.feishu-state.json', label:'Feishu company', testTitle:'【测试】GPT 重置飞书提醒已接通'};
+  if (channel === 'personal') return {statePath:'.feishu-personal-state.json', label:'Feishu personal', testTitle:'【测试】GPT 重置个人飞书提醒已接通'};
+  throw new Error('Unsupported Feishu channel.');
+}
+
 export async function main() {
+  const channel = channelSettings(process.env.FEISHU_CHANNEL);
   const config = configuration(process.env);
-  if (!config) { console.log('Feishu not configured; skipped.'); return; }
+  if (!config) {
+    if (process.env.SEND_FEISHU_TEST === 'true') throw new Error(`${channel.label}: configure both secrets before testing.`);
+    console.log(`${channel.label} not configured; skipped.`); return;
+  }
   const data = await loadSource();
   // Separate checkpoint: success/failure and test budgets never affect WeChat delivery.
-  const storage = await githubStore('.feishu-state.json', true);
+  const storage = await githubStore(channel.statePath, true);
   const {state, pending, baseline} = plan(data, storage.state);
   if (baseline || JSON.stringify(state) !== JSON.stringify(storage.state)) await storage.save(state);
   const isTest = process.env.SEND_FEISHU_TEST === 'true';
   if (!isTest && !pending.length) {
-    console.log(baseline ? 'Feishu baseline created. Historical posts not sent.' : 'Feishu: No new qualifying signal.'); return;
+    console.log(baseline ? `${channel.label} baseline created. Historical posts not sent.` : `${channel.label}: No new qualifying signal.`); return;
   }
   const batch = isTest ? [] : pending.slice(0, 2);
   let sendError;
   const ok = await deliver(state, batch, storage.save, async () => {
     try {
       await sendFeishu(config,
-        isTest ? '【测试】GPT 重置飞书提醒已接通' : 'GPT/Codex 重置动态',
+        isTest ? channel.testTitle : 'GPT/Codex 重置动态',
         isTest ? '这是一条配置测试，不代表发生重置。后续发现新的符合条件的 Tibo 消息时推送，无新消息保持安静。来源：AIHOT 第三方整理。' : message(batch));
     } catch (error) { sendError = error; throw error; }
   }, isTest).catch(() => { throw new Error(sendError?.message || 'Feishu state/delivery failed; inspect run before retrying.'); });
   if (!ok && isTest) throw new Error('Feishu daily test allowance exhausted.');
-  console.log(ok ? (isTest ? 'Feishu test accepted by API.' : 'Feishu new signal accepted by API.') : 'Feishu daily cap reached; pending retained.');
+  console.log(ok ? (isTest ? `${channel.label} test accepted by API.` : `${channel.label} new signal accepted by API.`) : `${channel.label} daily cap reached; pending retained.`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

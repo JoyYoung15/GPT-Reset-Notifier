@@ -1,12 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
-import { configuration, payload, sendFeishu } from '../feishu.mjs';
+import { configuration, payload, sendFeishu, channelSettings } from '../feishu.mjs';
 import { plan, deliver, loadSource } from '../monitor.mjs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 const config = { url: 'https://open.feishu.cn/open-apis/bot/v2/hook/test-placeholder', secret: 'test-secret' };
+
+test('personal Feishu has a separate checkpoint while company keeps its existing history', () => {
+  assert.equal(channelSettings().statePath, '.feishu-state.json');
+  assert.equal(channelSettings('company').statePath, '.feishu-state.json');
+  assert.equal(channelSettings('personal').statePath, '.feishu-personal-state.json');
+  assert.match(channelSettings('personal').testTitle, /个人飞书/);
+  assert.throws(() => channelSettings('../company'), /Unsupported/);
+});
 
 test('both channels reuse one validated source request and reject stale shared snapshots', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'reset-source-test-'));
@@ -69,9 +77,13 @@ test('separate channel checkpoints prevent replay and isolate delivery uncertain
   const newPost = {...post, id:'124', url:'https://x.com/thsottiaux/status/124'};
   data.activities.push(newPost);
   const w = plan(data, wechat, now), f = plan(data, firstFeishu.state, now);
+  const personal = plan(data, null, now);
+  assert.equal(personal.pending.length, 0); // joining later must not replay company history
+  const personalBefore = JSON.stringify(personal.state);
   await assert.rejects(deliver(f.state, f.pending, async()=>{}, async()=>{throw Error('timeout');}));
   assert.equal(plan(data, w.state, now).pending.length, 1);
   await deliver(w.state, w.pending, async()=>{}, async()=>{});
   assert.equal(plan(data, w.state, now).pending.length, 0);
   assert.equal(plan(data, f.state, now).pending.length, 0);
+  assert.equal(JSON.stringify(personal.state), personalBefore);
 });

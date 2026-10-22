@@ -15,7 +15,11 @@ on:
         type: boolean
         default: false
       send_feishu_test:
-        description: '发送一条标明为测试的飞书消息（不发送微信测试）'
+        description: '发送一条标明为测试的公司飞书消息'
+        type: boolean
+        default: false
+      send_feishu_personal_test:
+        description: '只向个人飞书群发送一条测试消息'
         type: boolean
         default: false
 permissions:
@@ -52,12 +56,23 @@ jobs:
           SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
           SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
           SEND_TEST: ${{ inputs.send_test == true && 'true' || 'false' }}
-      - name: Check source and notify Feishu
+      - name: Check source and notify company Feishu
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: node feishu.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           FEISHU_SIGNING_SECRET: ${{ secrets.FEISHU_SIGNING_SECRET }}
+          FEISHU_CHANNEL: company
           SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
           SEND_FEISHU_TEST: ${{ inputs.send_feishu_test == true && 'true' || 'false' }}
+      - name: Check source and notify personal Feishu
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        run: node feishu.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_PERSONAL_WEBHOOK_URL }}
+          FEISHU_SIGNING_SECRET: ${{ secrets.FEISHU_PERSONAL_SIGNING_SECRET }}
+          FEISHU_CHANNEL: personal
+          SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
+          SEND_FEISHU_TEST: ${{ inputs.send_feishu_personal_test == true && 'true' || 'false' }}

@@ -101,7 +101,7 @@ async function request(url, options = {}) {
 }
 
 export async function githubStore(statePath = STATE_PATH, allowMissingState = false) {
-  if (![STATE_PATH, '.feishu-state.json'].includes(statePath)) throw new Error('Unsupported state path.');
+  if (![STATE_PATH, '.feishu-state.json', '.feishu-personal-state.json'].includes(statePath)) throw new Error('Unsupported state path.');
   const repo = process.env.GITHUB_REPOSITORY;
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo || '') || !process.env.GITHUB_TOKEN) throw new Error('Run from GitHub Actions with its repository token.');
   const base = `https://api.github.com/repos/${repo}`;
