@@ -52,6 +52,29 @@ test('stale data, invalid links, duplicate IDs and broken schema fail closed', (
   assert.throws(() => validate(snapshot([post(), post()]), start));
   assert.throws(() => validate({ ...snapshot([]), schemaVersion: 2 }, start));
 });
+test('null or missing translations fall back to original text without changing deduplication', () => {
+  for (const text of [null, undefined]) {
+    const data = snapshot([{ ...post(), text }]);
+    validate(data, start);
+    const item = signals(data)[0];
+    assert.equal(item.text, post().originalText);
+    assert.match(message([item]), /A reset is coming today/);
+    assert.equal(plan(data, baseline(), start).pending.length, 0);
+  }
+  assert.throws(() => validate(snapshot([{ ...post(), text: 42 }]), start), /Invalid source post/);
+  assert.throws(() => validate(snapshot([{ ...post(), text: null, originalText: null }]), start), /Invalid source post/);
+});
+test('untranslated related reply does not block new qualifying notifications', () => {
+  const reply = { ...post('2114228445043691592'), kind: 'related', action: null, eventIds: [], text: null, originalText: '@_jayyy18_13k' };
+  const data = snapshot([post(), reply, post('124', 'confirm', start + 60000)], start + 60000);
+  const result = plan(data, baseline(), start + 60000);
+  assert.deepEqual(result.pending.map(p => p.id), ['124']);
+});
+test('source health, collection age and schema failures have distinct diagnostics', () => {
+  assert.throws(() => validate({...snapshot([]), schemaVersion: 2}, start), /schema/);
+  assert.throws(() => validate({...snapshot([]), monitor: {status:'degraded'}}, start), /not healthy/);
+  assert.throws(() => validate(snapshot([], start - 3 * 3600000), start), /two hours/);
+});
 test('state must persist before a message can be sent', async () => {
   let sent = false;
   await assert.rejects(deliver(baseline(), [signals(snapshot([post('124')]))[0]], async () => { throw Error('save failed'); }, async () => { sent = true; }));

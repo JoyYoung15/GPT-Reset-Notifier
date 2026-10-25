@@ -49,6 +49,11 @@ jobs:
           node-version: '22'
       - run: npm test
         id: tests
+      - name: Prepare shared source
+        id: source
+        run: node source.mjs
+        env:
+          SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
       - name: Check source and notify WeChat
         run: node monitor.mjs
         env:
@@ -57,7 +62,7 @@ jobs:
           SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
           SEND_TEST: ${{ inputs.send_test == true && 'true' || 'false' }}
       - name: Check source and notify company Feishu
-        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' && steps.source.outcome == 'success' }}
         run: node feishu.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -67,7 +72,7 @@ jobs:
           SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
           SEND_FEISHU_TEST: ${{ inputs.send_feishu_test == true && 'true' || 'false' }}
       - name: Check source and notify personal Feishu
-        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' && steps.source.outcome == 'success' }}
         run: node feishu.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}

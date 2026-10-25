@@ -15,15 +15,17 @@ const sourceURL = (url, id) => url === `https://x.com/thsottiaux/status/${id}`;
 
 export function validate(data, now = Date.now()) {
   if (data?.schemaVersion !== 1 || !Array.isArray(data.events) || !Array.isArray(data.activities)
-      || !date(data.checkedAt) || data.monitor?.status !== 'healthy'
-      || !date(data.monitor.lastCollectedAt)
-      || now - Date.parse(data.monitor.lastCollectedAt) > 2 * 3600000
-      || Date.parse(data.checkedAt) > now + 10 * 60000) throw new Error('Source unavailable, stale, or schema changed; checkpoint unchanged.');
+      || !date(data.checkedAt)) throw new Error('Source schema changed or checkedAt invalid; checkpoint unchanged.');
+  if (data.monitor?.status !== 'healthy') throw new Error('Source monitor is not healthy; checkpoint unchanged.');
+  if (!date(data.monitor.lastCollectedAt)) throw new Error('Source lastCollectedAt invalid; checkpoint unchanged.');
+  if (now - Date.parse(data.monitor.lastCollectedAt) > 2 * 3600000) throw new Error('Source collection is over two hours old; checkpoint unchanged.');
+  if (Date.parse(data.checkedAt) > now + 10 * 60000) throw new Error('Source checkedAt is in the future; checkpoint unchanged.');
   const ids = new Set();
   for (const p of data.activities) {
     if (!/^\d+$/.test(p.id) || ids.has(p.id) || !date(p.publishedAt)
         || !sourceURL(p.url, p.id) || !Array.isArray(p.eventIds)
-        || typeof p.originalText !== 'string' || typeof p.text !== 'string') throw new Error('Invalid source post; checkpoint unchanged.');
+        || typeof p.originalText !== 'string'
+        || (p.text != null && typeof p.text !== 'string')) throw new Error('Invalid source post fields; checkpoint unchanged.');
     ids.add(p.id);
   }
   return data;
@@ -51,7 +53,7 @@ export function signals(data) {
     if (!action) return [];
     const event = p.eventIds.map(id => events.get(id)).find(Boolean);
     const identity = `${p.id}:${action}`;
-    return [{ ...p, action, event, identity, fingerprint: hash(`${identity}:${p.originalText}`) }];
+    return [{ ...p, text: p.text ?? p.originalText, action, event, identity, fingerprint: hash(`${identity}:${p.originalText}`) }];
   }).sort((a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt));
 }
 
