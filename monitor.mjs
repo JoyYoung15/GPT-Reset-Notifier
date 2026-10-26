@@ -16,7 +16,9 @@ const sourceURL = (url, id) => url === `https://x.com/thsottiaux/status/${id}`;
 export function validate(data, now = Date.now()) {
   if (data?.schemaVersion !== 1 || !Array.isArray(data.events) || !Array.isArray(data.activities)
       || !date(data.checkedAt)) throw new Error('Source schema changed or checkedAt invalid; checkpoint unchanged.');
-  if (data.monitor?.status !== 'healthy') throw new Error('Source monitor is not healthy; checkpoint unchanged.');
+  // attention is a documented monitoring-progress state, not a verdict that
+  // every published event is unusable. Keep freshness and per-post checks.
+  if (!['healthy', 'attention'].includes(data.monitor?.status)) throw new Error('Source monitor is not healthy or attention; checkpoint unchanged.');
   if (!date(data.monitor.lastCollectedAt)) throw new Error('Source lastCollectedAt invalid; checkpoint unchanged.');
   if (now - Date.parse(data.monitor.lastCollectedAt) > 2 * 3600000) throw new Error('Source collection is over two hours old; checkpoint unchanged.');
   if (Date.parse(data.checkedAt) > now + 10 * 60000) throw new Error('Source checkedAt is in the future; checkpoint unchanged.');
@@ -51,7 +53,7 @@ export function signals(data) {
     if (!action) return [];
     const event = p.eventIds.map(id => events.get(id)).find(Boolean);
     const identity = `${p.id}:${action}`;
-    return [{ ...p, text: p.text ?? p.originalText, action, event, identity, fingerprint: hash(`${identity}:${p.originalText}`) }];
+    return [{ ...p, text: p.text ?? p.originalText, action, event, identity, sourceAttention: data.monitor?.status === 'attention', fingerprint: hash(`${identity}:${p.originalText}`) }];
   }).sort((a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt));
 }
 
@@ -92,7 +94,8 @@ export function message(items) {
       + `范围：${scope || '原始信息未明确，不能视为所有账户适用'}\n\n`
       + `预计时间：以本条原文时间表述为准；未提供时不推算。\n\n`
       + `[Tibo 原帖](${p.url})\n\n原文：${p.originalText.slice(0, 1800)}`;
-  }).join('\n\n---\n\n') + '\n\n来源：AIHOT 第三方整理（https://aihot.news/codex-reset），程序未直接核验 X。预告不等于已经到账，具体额度请查看自己的账户。';
+  }).join('\n\n---\n\n') + '\n\n来源：AIHOT 第三方整理（https://aihot.news/codex-reset），程序未直接核验 X。预告不等于已经到账，具体额度请查看自己的账户。'
+    + (items.some(p => p.sourceAttention) ? '\n\n来源状态：attention（需关注）。本条来自接口公开记录；该状态未指明哪些帖子需复核，请结合原帖判断。' : '');
 }
 
 async function request(url, options = {}) {

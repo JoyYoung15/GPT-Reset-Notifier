@@ -45,3 +45,22 @@ test('rate limits and unhealthy data fail preparation without creating a usable 
     }
   } finally { await rm(dir, {recursive:true,force:true}); }
 });
+
+test('attention source preparation succeeds with a warning and retains its status in the shared snapshot', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'source-attention-'));
+  const path = join(dir,'source.json');
+  try {
+    const result = run(path, `globalThis.fetch = async () => {
+      const now = new Date().toISOString();
+      return new Response(JSON.stringify({schemaVersion:1,checkedAt:now,
+        monitor:{status:'attention',lastCollectedAt:now,reviewCount:1},events:[],activities:[]}));
+    };`);
+    assert.equal(result.status,0,result.stderr);
+    assert.match(result.stderr,/Source monitor attention/);
+    assert.match(result.stdout,/Shared source validated/);
+    assert.equal(JSON.parse(await readFile(path,'utf8')).monitor.status,'attention');
+    for (let channel=0;channel<3;channel++) {
+      assert.equal((await loadSource(path,()=>{throw Error('unexpected refetch');})).monitor.status,'attention');
+    }
+  } finally { await rm(dir,{recursive:true,force:true}); }
+});

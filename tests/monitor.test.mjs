@@ -75,6 +75,41 @@ test('source health, collection age and schema failures have distinct diagnostic
   assert.throws(() => validate({...snapshot([]), monitor: {status:'degraded'}}, start), /not healthy/);
   assert.throws(() => validate(snapshot([], start - 3 * 3600000), start), /two hours/);
 });
+test('attention does not suppress a published announcement or turn a related reply into a signal', () => {
+  const reply = {...post('125'),kind:'related',action:null,eventIds:[],originalText:'@larsencc @bot Not enough resets'};
+  const data = snapshot([post(),post('124','announce',start+60000),reply],start+60000);
+  data.checkedAt = new Date(start).toISOString();
+  data.monitor = {...data.monitor,status:'attention',reviewCount:1};
+  const result = plan(data, baseline(), start+60000);
+  assert.deepEqual(result.pending.map(p => p.id), ['124']);
+  assert.equal(result.pending[0].sourceAttention, true);
+  assert.match(message(result.pending), /来源状态：attention/);
+  assert.match(message(result.pending), /未指明哪些帖子需复核/);
+});
+
+test('attention alone never changes fingerprints or resends previously handled posts', async () => {
+  const data = snapshot([post(),post('124','confirm',start+60000)],start+60000);
+  const state = baseline();
+  const normal = plan(data,state,start+60000);
+  data.monitor.status = 'attention';
+  const attention = plan(data,state,start+60000);
+  assert.equal(normal.pending[0].fingerprint,attention.pending[0].fingerprint);
+  await deliver(attention.state,attention.pending,async()=>{},async()=>{});
+  assert.equal(plan(data,attention.state,start+60000).pending.length,0);
+  data.monitor.status = 'healthy';
+  assert.equal(plan(data,attention.state,start+60000).pending.length,0);
+});
+
+test('attention retains stale data and malformed post protection; unknown states still fail', () => {
+  const attention = {...snapshot([post()]),monitor:{status:'attention',lastCollectedAt:new Date(start).toISOString()}};
+  assert.throws(()=>validate(attention,start+3*3600000),/two hours/);
+  assert.throws(()=>validate({...attention,activities:[{...post(),url:'https://evil.example/123'}]},start),/Invalid source post/);
+  assert.throws(()=>validate({...attention,schemaVersion:2},start),/schema/);
+  for (const status of ['delayed','unknown','unexpected',null]) {
+    assert.throws(()=>validate({...attention,monitor:{...attention.monitor,status}},start),/not healthy or attention/);
+  }
+});
+
 test('state must persist before a message can be sent', async () => {
   let sent = false;
   await assert.rejects(deliver(baseline(), [signals(snapshot([post('124')]))[0]], async () => { throw Error('save failed'); }, async () => { sent = true; }));
