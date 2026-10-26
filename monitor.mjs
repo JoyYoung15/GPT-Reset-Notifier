@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
+import { readSourceJSON } from './source-request.mjs';
 
-const SOURCE = 'https://aihot.news/api/v1/codex-resets';
 const STATE_BRANCH = 'notifier-state';
 const STATE_PATH = '.notifier-state.json';
 const DAY = 86400000;
@@ -31,14 +31,12 @@ export function validate(data, now = Date.now()) {
   return data;
 }
 
-export async function loadSource(snapshotPath = process.env.SOURCE_SNAPSHOT, fetcher = request) {
+export async function loadSource(snapshotPath = process.env.SOURCE_SNAPSHOT, fetcher = fetch, retryOptions) {
   if (snapshotPath) {
     try { return validate(JSON.parse(await readFile(snapshotPath, 'utf8'))); }
     catch (error) { if (error.code !== 'ENOENT') throw new Error('Invalid shared source snapshot; refusing notification.'); }
   }
-  const response = await fetcher(SOURCE, { headers: { 'User-Agent': 'GPT-Reset-Notifier/1.0 (+https://github.com/JoyYoung15/GPT-Reset-Notifier)' } });
-  if (!response.ok) throw new Error(`Source HTTP ${response.status}; no notification or checkpoint advance.`);
-  const data = validate(await response.json());
+  const data = validate(await readSourceJSON(fetcher, retryOptions));
   if (snapshotPath) await writeFile(snapshotPath, JSON.stringify(data), {mode:0o600});
   return data;
 }

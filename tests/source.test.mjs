@@ -4,11 +4,12 @@ import { spawnSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadSource } from '../monitor.mjs';
 
 const entry = new URL('../source.mjs', import.meta.url);
 const run = (snapshotPath, mock) => spawnSync(process.execPath, [
-  '--import', `data:text/javascript,${encodeURIComponent(mock)}`, entry.pathname
+  '--import', `data:text/javascript,${encodeURIComponent(mock)}`, fileURLToPath(entry)
 ], {env: {...process.env, SOURCE_SNAPSHOT:snapshotPath}, encoding:'utf8'});
 
 test('source preparation writes one snapshot reused by all three channels', async () => {
