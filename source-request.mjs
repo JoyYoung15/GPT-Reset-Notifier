@@ -1,13 +1,13 @@
 import { setTimeout as delay } from 'node:timers/promises';
 
 const SOURCE = 'https://aihot.news/api/v1/codex-resets';
-const RETRYABLE_HTTP = new Set([500, 502, 503, 504]);
+const RETRYABLE_HTTP = new Set([500, 502, 503, 504, 522]);
 const NETWORK_CODES = new Set([
   'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT',
   'UND_ERR_SOCKET', 'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND'
 ]);
 
-function networkCode(error) {
+export function networkCode(error) {
   // Never log arbitrary error messages: they can contain URLs or credentials.
   const code = error?.cause?.code ?? error?.code;
   if (NETWORK_CODES.has(code)) return code;

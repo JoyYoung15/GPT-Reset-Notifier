@@ -1,3 +1,4 @@
+import { StateRequestError } from './state-request.mjs';
 import { createHmac } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { plan, message, deliver, githubStore, loadSource } from './monitor.mjs';
@@ -68,7 +69,10 @@ export async function main() {
         isTest ? channel.testTitle : 'GPT/Codex 重置动态',
         isTest ? '这是一条配置测试，不代表发生重置。后续发现新的符合条件的 Tibo 消息时推送，无新消息保持安静。来源：AIHOT 第三方整理。' : message(batch));
     } catch (error) { sendError = error; throw error; }
-  }, isTest).catch(() => { throw new Error(sendError?.message || 'Feishu state/delivery failed; inspect run before retrying.'); });
+  }, isTest).catch(error => {
+    const stateError = error instanceof StateRequestError ? error : error.cause instanceof StateRequestError ? error.cause : null;
+    throw new Error(sendError?.message || stateError?.message || 'Feishu state/delivery failed; inspect run before retrying.');
+  });
   if (!ok && isTest) throw new Error('Feishu daily test allowance exhausted.');
   console.log(ok ? (isTest ? `${channel.label} test accepted by API.` : `${channel.label} new signal accepted by API.`) : `${channel.label} daily cap reached; pending retained.`);
 }

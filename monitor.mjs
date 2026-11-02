@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import { readSourceJSON } from './source-request.mjs';
+import { stateRequest, StateRequestError } from './state-request.mjs';
+import { sendServerChan, ServerChanError } from './serverchan.mjs';
 
 const STATE_BRANCH = 'notifier-state';
 const STATE_PATH = '.notifier-state.json';
@@ -13,12 +15,17 @@ const shanghaiDay = now => new Date(now + 8 * 3600000).toISOString().slice(0, 10
 const displayTime = value => new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
 const sourceURL = (url, id) => url === `https://x.com/thsottiaux/status/${id}`;
 
+export function monitorStatus(value) {
+  if (value == null) return 'missing';
+  return typeof value === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(value) ? value : 'invalid';
+}
+
 export function validate(data, now = Date.now()) {
   if (data?.schemaVersion !== 1 || !Array.isArray(data.events) || !Array.isArray(data.activities)
       || !date(data.checkedAt)) throw new Error('Source schema changed or checkedAt invalid; checkpoint unchanged.');
   // attention is a documented monitoring-progress state, not a verdict that
   // every published event is unusable. Keep freshness and per-post checks.
-  if (!['healthy', 'attention'].includes(data.monitor?.status)) throw new Error('Source monitor is not healthy or attention; checkpoint unchanged.');
+  if (!['healthy', 'attention'].includes(data.monitor?.status)) throw new Error(`Source monitor is not healthy or attention (status=${monitorStatus(data.monitor?.status)}); checkpoint unchanged.`);
   if (!date(data.monitor.lastCollectedAt)) throw new Error('Source lastCollectedAt invalid; checkpoint unchanged.');
   if (now - Date.parse(data.monitor.lastCollectedAt) > 2 * 3600000) throw new Error('Source collection is over two hours old; checkpoint unchanged.');
   if (Date.parse(data.checkedAt) > now + 10 * 60000) throw new Error('Source checkedAt is in the future; checkpoint unchanged.');
@@ -98,23 +105,15 @@ export function message(items) {
     + (items.some(p => p.sourceAttention) ? '\n\n来源状态：attention（需关注）。本条来自接口公开记录；该状态未指明哪些帖子需复核，请结合原帖判断。' : '');
 }
 
-async function request(url, options = {}) {
-  try { return await fetch(url, { ...options, redirect: 'error', signal: AbortSignal.timeout(25000) }); }
-  catch { throw new Error('Network request failed or timed out (URL and credentials omitted).'); }
-}
-
-export async function githubStore(statePath = STATE_PATH, allowMissingState = false) {
+export async function githubStore(statePath = STATE_PATH, allowMissingState = false, requestOptions) {
   if (![STATE_PATH, '.feishu-state.json', '.feishu-personal-state.json'].includes(statePath)) throw new Error('Unsupported state path.');
   const repo = process.env.GITHUB_REPOSITORY;
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo || '') || !process.env.GITHUB_TOKEN) throw new Error('Run from GitHub Actions with its repository token.');
   const base = `https://api.github.com/repos/${repo}`;
   const headers = { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' };
-  const api = async (path, method = 'GET', body) => {
-    const r = await request(base + path, { method, headers, ...(body ? { body: JSON.stringify(body) } : {}) });
-    if (r.status === 404 && method === 'GET') return null;
-    if (!r.ok) throw new Error(`GitHub state operation failed (HTTP ${r.status}); check Actions contents write permission.`);
-    return r.json();
-  };
+  const api = (path, method = 'GET', body) => stateRequest(base + path, {
+    method, headers, ...(body ? { body: JSON.stringify(body) } : {})
+  }, `GitHub state ${method === 'GET' ? 'read' : 'write'} (${statePath}, ${method === 'GET' && path.startsWith('/git/ref/') ? 'branch lookup' : method})`, requestOptions);
   let sha;
   let branchExists = !!(await api(`/git/ref/heads/${STATE_BRANCH}`));
   let state = null;
@@ -150,10 +149,11 @@ export async function deliver(state, items, save, send, isTest = false) {
     await send();
     for (const p of items) { state.handled[p.fingerprint] = 'sent'; state.seen[p.identity] = p.fingerprint; }
     await save(state);
-  } catch {
+  } catch (error) {
     for (const p of items) state.handled[p.fingerprint] = 'delivery_uncertain';
     await save(state);
-    throw new Error('Push failed or delivery uncertain. Check ServerChan log; automatic resend is suppressed to avoid duplicates.');
+    const detail = error instanceof StateRequestError || error instanceof ServerChanError ? error.message : 'Push failed or delivery uncertain.';
+    throw new Error(`${detail} Automatic resend is suppressed to avoid duplicates.`, {cause:error});
   }
   return true;
 }
@@ -164,14 +164,7 @@ export async function main() {
   const data = await loadSource();
   const storage = await githubStore();
   const { state, pending, baseline } = plan(data, storage.state);
-  const send = async (title, desp) => {
-    const r = await request(`https://sctapi.ftqq.com/${key}.send`, {
-      method: 'POST', body: new URLSearchParams({ title, desp })
-    });
-    if (!r.ok) throw new Error('Push HTTP error.');
-    const result = await r.json();
-    if (result.code !== 0) throw new Error('Push API rejected request.');
-  };
+  const send = (title, desp) => sendServerChan(key, title, desp);
   if (baseline || JSON.stringify(state) !== JSON.stringify(storage.state)) await storage.save(state);
   if (process.env.SEND_TEST === 'true') {
     const ok = await deliver(state, [], storage.save, () => send('【测试】GPT 重置微信提醒已接通', '这是一条配置测试，不代表发生了重置。\n\nGitHub Actions 已读取消息接口；首次运行只建立历史基线，后续有新的预告、确认或更正时才推送。\n\n来源覆盖：AIHOT 整理的 Tibo 消息。'), true);

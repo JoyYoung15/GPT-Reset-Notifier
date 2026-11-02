@@ -8,6 +8,7 @@ if (!process.env.SOURCE_SNAPSHOT) {
 } else {
   await loadSource().then(
     data => {
+      console.log(`Source status=${data.monitor.status}; checkedAt=${new Date(data.checkedAt).toISOString()}; lastCollectedAt=${new Date(data.monitor.lastCollectedAt).toISOString()}.`);
       if (data.monitor.status === 'attention') {
         console.warn('Source monitor attention: continuing with published signals after freshness and post validation; review status is not available per post.');
       }

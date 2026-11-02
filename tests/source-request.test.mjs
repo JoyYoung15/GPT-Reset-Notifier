@@ -72,6 +72,23 @@ test('temporary upstream HTTP failures recover and respect Retry-After', async (
   assert.deepEqual(opts.waits, [12000,5000]);
 });
 
+test('Cloudflare 522 recovers within three attempts or stops with its HTTP code', async () => {
+  const opts = options();
+  let calls = 0;
+  assert.deepEqual(await readSourceJSON(async () => ++calls < 3
+    ? new Response('origin timeout', {status:522})
+    : new Response('{"recovered":true}'), opts), {recovered:true});
+  assert.equal(calls, 3);
+  assert.deepEqual(opts.waits, [2000,5000]);
+  calls = 0;
+  const failing = options();
+  await assert.rejects(readSourceJSON(async () => {
+    calls++; return new Response('private upstream body', {status:522});
+  }, failing), /Source HTTP 522; stopped after 3/);
+  assert.equal(calls, 3);
+  assert.doesNotMatch(failing.warnings.join('\n'), /private upstream body/);
+});
+
 test('rate limits, redirects, security blocks and long Retry-After do not cause immediate retries', async () => {
   for (const status of [429,403,302,566,567,503]) {
     let calls = 0;
