@@ -42,7 +42,7 @@ test('ServerChan success is saved and deduplicated', async () => {
 test('unaccepted source status is observable without logging arbitrary response text', () => {
   const now = new Date().toISOString();
   const data = {schemaVersion:1,checkedAt:now,events:[],activities:[],monitor:{lastCollectedAt:now}};
-  for (const [value, expected] of [['delayed','delayed'],['unknown','unknown'],[null,'missing'],['https://private.invalid/?key=secret','invalid']]) {
+  for (const [value, expected] of [['degraded','degraded'],['unknown','unknown'],[null,'missing'],['https://private.invalid/?key=secret','invalid']]) {
     assert.throws(()=>validate({...data,monitor:{...data.monitor,status:value}}), error=>{
       assert.match(error.message,new RegExp(`status=${expected}`));
       assert.doesNotMatch(error.message,/private.invalid|key=secret/);

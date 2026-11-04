@@ -105,9 +105,39 @@ test('attention retains stale data and malformed post protection; unknown states
   assert.throws(()=>validate(attention,start+3*3600000),/two hours/);
   assert.throws(()=>validate({...attention,activities:[{...post(),url:'https://evil.example/123'}]},start),/Invalid source post/);
   assert.throws(()=>validate({...attention,schemaVersion:2},start),/schema/);
-  for (const status of ['delayed','unknown','unexpected',null]) {
-    assert.throws(()=>validate({...attention,monitor:{...attention.monitor,status}},start),/not healthy or attention/);
+  for (const status of ['unknown','unexpected',null]) {
+    assert.throws(()=>validate({...attention,monitor:{...attention.monitor,status}},start),/not healthy, attention or delayed/);
   }
+});
+
+test('delayed collection processes published signals, warns, and catches up without duplicates', async () => {
+  const data = snapshot([post(), post('124', 'announce', start + 60000)], start + 60000);
+  data.checkedAt = new Date(start - 3 * 3600000).toISOString();
+  data.monitor.status = 'delayed';
+  const result = plan(data, baseline(), start + 60000);
+  assert.deepEqual(result.pending.map(p => p.id), ['124']);
+  assert.match(message(result.pending), /来源状态：delayed/);
+  assert.match(message(result.pending), /不代表重置已发生或被推迟/);
+  const fingerprint = result.pending[0].fingerprint;
+  await deliver(result.state, result.pending, async () => {}, async () => {});
+  data.monitor.status = 'healthy';
+  data.activities.push(post('125', 'confirm', start + 30000));
+  const recovered = plan(data, result.state, start + 120000);
+  assert.equal(signals(data).find(p => p.id === '124').fingerprint, fingerprint);
+  assert.deepEqual(recovered.pending.map(p => p.id), ['125']);
+  assert.doesNotMatch(message(recovered.pending), /来源状态：delayed/);
+});
+
+test('delayed collection still rejects stale, future, missing and malformed data without changing state', () => {
+  const data = snapshot([post()], start);
+  data.monitor.status = 'delayed';
+  const state = baseline();
+  const saved = structuredClone(state);
+  assert.throws(() => plan(data, state, start + 2 * 3600000 + 1), /two hours/);
+  assert.throws(() => validate({...data, monitor:{...data.monitor,lastCollectedAt:null}}, start), /lastCollectedAt invalid/);
+  assert.throws(() => validate({...data, monitor:{...data.monitor,lastCollectedAt:new Date(start+11*60000).toISOString()}}, start), /in the future/);
+  assert.throws(() => validate({...data, activities:[{...post(),url:'https://invalid.example/123'}]}, start), /Invalid source post/);
+  assert.deepEqual(state, saved);
 });
 
 test('state must persist before a message can be sent', async () => {

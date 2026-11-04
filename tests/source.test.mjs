@@ -12,6 +12,33 @@ const run = (snapshotPath, mock) => spawnSync(process.execPath, [
   '--import', `data:text/javascript,${encodeURIComponent(mock)}`, fileURLToPath(entry)
 ], {env: {...process.env, SOURCE_SNAPSHOT:snapshotPath}, encoding:'utf8'});
 
+test('delayed source prepares all channels with a visible warning, while stale delayed data fails', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'source-delayed-'));
+  try {
+    for (const stale of [false, true]) {
+      const path = join(dir, `${stale}.json`);
+      const result = run(path, `globalThis.fetch = async () => {
+        const now = new Date().toISOString();
+        return new Response(JSON.stringify({schemaVersion:1,checkedAt:now,
+          monitor:{status:'delayed',lastCollectedAt:new Date(Date.now()-${stale ? 3 * 3600000 : 0}).toISOString()},events:[],activities:[]}));
+      };`);
+      if (stale) {
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /two hours/);
+        await assert.rejects(access(path), {code:'ENOENT'});
+      } else {
+        assert.equal(result.status, 0, result.stderr);
+        assert.match(result.stderr, /::warning::Source monitor delayed/);
+        assert.match(result.stderr, /not a completed scan/);
+        assert.match(result.stdout, /Shared source validated/);
+        for (let channel=0; channel<3; channel++) {
+          assert.equal((await loadSource(path, () => {throw Error('unexpected refetch');})).monitor.status, 'delayed');
+        }
+      }
+    }
+  } finally { await rm(dir, {recursive:true,force:true}); }
+});
+
 test('source preparation writes one snapshot reused by all three channels', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'source-prepare-'));
   const path = join(dir, 'source.json');

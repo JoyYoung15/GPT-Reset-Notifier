@@ -23,11 +23,12 @@ export function monitorStatus(value) {
 export function validate(data, now = Date.now()) {
   if (data?.schemaVersion !== 1 || !Array.isArray(data.events) || !Array.isArray(data.activities)
       || !date(data.checkedAt)) throw new Error('Source schema changed or checkedAt invalid; checkpoint unchanged.');
-  // attention is a documented monitoring-progress state, not a verdict that
-  // every published event is unusable. Keep freshness and per-post checks.
-  if (!['healthy', 'attention'].includes(data.monitor?.status)) throw new Error(`Source monitor is not healthy or attention (status=${monitorStatus(data.monitor?.status)}); checkpoint unchanged.`);
+  // Monitoring progress does not invalidate every published event. Delayed
+  // collection can be incomplete, so retain freshness and per-post checks.
+  if (!['healthy', 'attention', 'delayed'].includes(data.monitor?.status)) throw new Error(`Source monitor is not healthy, attention or delayed (status=${monitorStatus(data.monitor?.status)}); checkpoint unchanged.`);
   if (!date(data.monitor.lastCollectedAt)) throw new Error('Source lastCollectedAt invalid; checkpoint unchanged.');
   if (now - Date.parse(data.monitor.lastCollectedAt) > 2 * 3600000) throw new Error('Source collection is over two hours old; checkpoint unchanged.');
+  if (Date.parse(data.monitor.lastCollectedAt) > now + 10 * 60000) throw new Error('Source lastCollectedAt is in the future; checkpoint unchanged.');
   if (Date.parse(data.checkedAt) > now + 10 * 60000) throw new Error('Source checkedAt is in the future; checkpoint unchanged.');
   const ids = new Set();
   for (const p of data.activities) {
@@ -60,7 +61,7 @@ export function signals(data) {
     if (!action) return [];
     const event = p.eventIds.map(id => events.get(id)).find(Boolean);
     const identity = `${p.id}:${action}`;
-    return [{ ...p, text: p.text ?? p.originalText, action, event, identity, sourceAttention: data.monitor?.status === 'attention', fingerprint: hash(`${identity}:${p.originalText}`) }];
+    return [{ ...p, text: p.text ?? p.originalText, action, event, identity, sourceAttention: data.monitor?.status === 'attention', sourceDelayed: data.monitor?.status === 'delayed', fingerprint: hash(`${identity}:${p.originalText}`) }];
   }).sort((a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt));
 }
 
@@ -102,7 +103,8 @@ export function message(items) {
       + `预计时间：以本条原文时间表述为准；未提供时不推算。\n\n`
       + `[Tibo 原帖](${p.url})\n\n原文：${p.originalText.slice(0, 1800)}`;
   }).join('\n\n---\n\n') + '\n\n来源：AIHOT 第三方整理（https://aihot.news/codex-reset），程序未直接核验 X。预告不等于已经到账，具体额度请查看自己的账户。'
-    + (items.some(p => p.sourceAttention) ? '\n\n来源状态：attention（需关注）。本条来自接口公开记录；该状态未指明哪些帖子需复核，请结合原帖判断。' : '');
+    + (items.some(p => p.sourceAttention) ? '\n\n来源状态：attention（需关注）。本条来自接口公开记录；该状态未指明哪些帖子需复核，请结合原帖判断。' : '')
+    + (items.some(p => p.sourceDelayed) ? '\n\n来源状态：delayed（采集延迟）。本条来自接口已公开记录，最新消息可能尚未完整收录；此状态不代表重置已发生或被推迟。' : '');
 }
 
 export async function githubStore(statePath = STATE_PATH, allowMissingState = false, requestOptions) {
