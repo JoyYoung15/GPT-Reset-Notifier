@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stateRequest, StateRequestError } from '../state-request.mjs';
+import { stateRequest, StateRequestError, saveCheckpoint } from '../state-request.mjs';
 import { githubStore, deliver } from '../monitor.mjs';
 
 const url = 'https://api.github.com/repos/example/repo/contents/.notifier-state.json';
@@ -89,11 +89,137 @@ test('githubStore recovers state reads but a failed reservation write prevents s
     const storage = await githubStore('.notifier-state.json', false, opts);
     assert.equal(reads, 3);
     await assert.rejects(deliver(storage.state, [], storage.save, async()=>{sent++;}), /GitHub state write/);
-    assert.equal(writes, 1);
+    assert.equal(writes, 3);
     assert.equal(sent, 0);
     assert.doesNotMatch(opts.warnings.join('\n'), /placeholder-secret/);
   } finally {
     if (previousRepo === undefined) delete process.env.GITHUB_REPOSITORY; else process.env.GITHUB_REPOSITORY = previousRepo;
     if (previousToken === undefined) delete process.env.GITHUB_TOKEN; else process.env.GITHUB_TOKEN = previousToken;
+  }
+});
+
+const content = Buffer.from('checkpoint\n').toString('base64');
+const checkpoint = (sha, value = content) => ({sha, content:value, encoding:'base64'});
+const transient = () => new StateRequestError('GitHub state write: HTTP 500', true);
+
+test('checkpoint verifies committed writes after 500, timeout, lost body and malformed success', async () => {
+  for (const mode of ['http','timeout','body','malformed']) {
+    let writes = 0, reads = 0;
+    const opts = options(async () => {
+      writes++;
+      if (mode === 'http') return new Response('', {status:500});
+      if (mode === 'timeout') throw new DOMException('private', 'TimeoutError');
+      if (mode === 'body') return new Response('invalid');
+      return new Response('{}');
+    });
+    const sha = await saveCheckpoint(
+      () => stateRequest(url, {method:'PUT'}, 'GitHub state write', opts),
+      async () => {reads++;return checkpoint('saved-sha');},
+      'old-sha', content, 'GitHub state write', opts);
+    assert.equal(sha, 'saved-sha');
+    assert.equal(writes, 1);
+    assert.equal(reads, 1);
+    assert.doesNotMatch(opts.warnings.join('\n'), /private|token=|https:/);
+  }
+});
+
+test('checkpoint retries only after verifying unchanged state and stops after three writes', async () => {
+  for (const recover of [true,false]) {
+    let writes = 0, reads = 0;
+    const opts = options();
+    const saving = saveCheckpoint(async () => {
+      if (++writes < 3 || !recover) throw transient();
+      return {content:{sha:'saved-sha'}};
+    }, async () => {reads++;return checkpoint('old-sha', Buffer.from('old').toString('base64'));},
+    'old-sha', content, 'GitHub state write', opts);
+    if (recover) assert.equal(await saving, 'saved-sha');
+    else await assert.rejects(saving, /not saved after 3 verified attempts/);
+    assert.equal(writes, 3);
+    assert.equal(reads, recover ? 2 : 3);
+  }
+});
+
+test('changed, deleted or unreadable checkpoints cannot authorize a repeat write', async () => {
+  for (const current of [checkpoint('other-sha', 'b3RoZXI='), null, 'unreadable']) {
+    let writes = 0;
+    await assert.rejects(saveCheckpoint(async () => {writes++;throw transient();}, async () => {
+      if (current === 'unreadable') throw new StateRequestError('GitHub state read failed');
+      return current;
+    }, 'old-sha', content, 'GitHub state write', options()), /refusing to overwrite|state read failed/);
+    assert.equal(writes, 1);
+  }
+});
+
+test('permission and rate-limit failures do not trigger checkpoint retry', async () => {
+  for (const status of [403,429,422]) {
+    let writes = 0, reads = 0;
+    const opts = options(async () => {writes++;return new Response('', {status});});
+    await assert.rejects(saveCheckpoint(() => stateRequest(url,{method:'PUT'},'GitHub state write',opts),
+      async () => {reads++;return checkpoint('old-sha');}, 'old-sha', content, 'GitHub state write', opts), new RegExp(`HTTP ${status}`));
+    assert.equal(writes, 1);
+    assert.equal(reads, 0);
+  }
+});
+
+test('new checkpoint creation verifies absence before retry; concurrent creation is preserved', async () => {
+  for (const conflict of [false,true]) {
+    let writes = 0;
+    const saving = saveCheckpoint(async () => {
+      if (++writes === 1) throw transient();
+      return {content:{sha:'created-sha'}};
+    }, async () => conflict ? checkpoint('other-sha','b3RoZXI=') : null,
+    undefined, content, 'GitHub state write', options());
+    if (conflict) await assert.rejects(saving, /refusing to overwrite/);
+    else assert.equal(await saving, 'created-sha');
+    assert.equal(writes, conflict ? 1 : 2);
+  }
+});
+
+test('checkpoint recovery respects short Retry-After and stops for long backoff', async () => {
+  for (const seconds of [4,60]) {
+    let writes = 0, reads = 0;
+    const opts = options(async () => {
+      writes++;
+      return new Response('',{status:503,headers:{'Retry-After':String(seconds)}});
+    });
+    const saving = saveCheckpoint(() => stateRequest(url,{method:'PUT'},'GitHub state write',opts),
+      async () => {reads++;return checkpoint('saved-sha');}, 'old-sha', content,'GitHub state write',opts);
+    if (seconds === 4) {
+      assert.equal(await saving,'saved-sha');
+      assert.deepEqual(opts.waits,[4000]);
+      assert.equal(reads,1);
+    } else {
+      await assert.rejects(saving,/HTTP 503/);
+      assert.deepEqual(opts.waits,[]);
+      assert.equal(reads,0);
+    }
+    assert.equal(writes,1);
+  }
+});
+
+test('store retains original SHA on retry, adopts verified SHA, and sends only once', async () => {
+  const previousRepo = process.env.GITHUB_REPOSITORY, previousToken = process.env.GITHUB_TOKEN;
+  process.env.GITHUB_REPOSITORY = 'example/repo'; process.env.GITHUB_TOKEN = 'placeholder';
+  try {
+    let file = checkpoint('initial-sha', Buffer.from(JSON.stringify({budget:{used:0},handled:{},seen:{}})).toString('base64'));
+    let writes = 0, sends = 0;
+    const opts = options(async (requested, init) => {
+      if (init.method === 'GET') return new Response(JSON.stringify(requested.includes('/git/ref/') ? {ref:'exists'} : file));
+      const body = JSON.parse(init.body);
+      assert.equal(body.sha, file.sha);
+      writes++;
+      if (writes === 1) return new Response('', {status:500}); // No commit: safe retry.
+      file = checkpoint(`saved-${writes}`,body.content);
+      if (writes === 2) throw offline(); // Committed reservation, lost response.
+      return new Response(JSON.stringify({content:{sha:file.sha}}));
+    });
+    const storage = await githubStore('.notifier-state.json',false,opts);
+    await deliver(storage.state,[{identity:'post:announce',fingerprint:'fp'}],storage.save,async()=>{sends++;});
+    assert.equal(writes, 3);
+    assert.equal(sends, 1);
+    assert.equal(JSON.parse(Buffer.from(file.content,'base64')).handled.fp, 'sent');
+  } finally {
+    if (previousRepo === undefined) delete process.env.GITHUB_REPOSITORY; else process.env.GITHUB_REPOSITORY=previousRepo;
+    if (previousToken === undefined) delete process.env.GITHUB_TOKEN; else process.env.GITHUB_TOKEN=previousToken;
   }
 });

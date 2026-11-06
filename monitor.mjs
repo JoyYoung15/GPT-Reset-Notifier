@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
 import { readSourceJSON } from './source-request.mjs';
-import { stateRequest, StateRequestError } from './state-request.mjs';
+import { stateRequest, StateRequestError, saveCheckpoint } from './state-request.mjs';
 import { sendServerChan, ServerChanError } from './serverchan.mjs';
 
 const STATE_BRANCH = 'notifier-state';
@@ -133,11 +133,16 @@ export async function githubStore(statePath = STATE_PATH, allowMissingState = fa
       await api('/git/refs', 'POST', { ref: `refs/heads/${STATE_BRANCH}`, sha: process.env.GITHUB_SHA });
       branchExists = true;
     }
-    const result = await api(`/contents/${statePath}`, 'PUT', {
+    const content = Buffer.from(JSON.stringify(value, null, 2) + '\n').toString('base64');
+    const body = {
       message: 'Save notification checkpoint', branch: STATE_BRANCH,
-      content: Buffer.from(JSON.stringify(value, null, 2) + '\n').toString('base64'), ...(sha ? { sha } : {})
-    });
-    sha = result.content.sha;
+      content, ...(sha ? { sha } : {})
+    };
+    sha = await saveCheckpoint(
+      () => api(`/contents/${statePath}`, 'PUT', body),
+      () => api(`/contents/${statePath}?ref=${STATE_BRANCH}`),
+      sha, content, `GitHub state write (${statePath}, PUT)`, requestOptions
+    );
   } };
 }
 
