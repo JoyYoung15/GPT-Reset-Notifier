@@ -50,10 +50,11 @@
     "eda57dea095653fa440775c5b06f1e3f7a1352feb5fcadaddcceb31dc20e447e": "sent",
     "ccae3333097a6d3af4262198c93102fa677f1fd36ba33ae74fe048dcc6d36327": "sent",
     "f238176848d2b920663d0952fe805844e57c81d1a88adb17a2551689abfe190a": "sent",
-    "b6a8800a00b2e33aebbe0434afd40bda551ca3f8bab256abf9cc8b6fdb776af3": "sent"
+    "b6a8800a00b2e33aebbe0434afd40bda551ca3f8bab256abf9cc8b6fdb776af3": "sent",
+    "7420131743129e097d16eb4b0eaac1110ee6c7a744ad0ecdf2d971cc7809f67a": "reserved"
   },
   "budget": {
     "day": "2026-11-11",
-    "used": 0
+    "used": 1
   }
 }
