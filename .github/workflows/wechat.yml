@@ -53,6 +53,8 @@ jobs:
         id: source
         run: node source.mjs
         env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_CACHE: github
           SOURCE_SNAPSHOT: ${{ runner.temp }}/gpt-reset-source.json
       - name: Check source and notify WeChat
         run: node monitor.mjs

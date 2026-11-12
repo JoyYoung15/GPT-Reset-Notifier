@@ -25,7 +25,7 @@ test('connection timeout recovers once and all channels reuse the validated snap
   const opts = options(), data = snapshot();
   try {
     const fetcher = async (url, init) => {
-      assert.equal(url, 'https://aihot.news/api/v1/codex-resets');
+      assert.equal(url, 'https://aihot.news/api/v1/codex-resets/recent');
       assert.equal(init.method, 'GET');
       assert.equal(init.redirect, 'manual');
       assert.ok(init.signal instanceof AbortSignal);

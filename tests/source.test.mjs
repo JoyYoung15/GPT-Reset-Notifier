@@ -12,6 +12,32 @@ const run = (snapshotPath, mock) => spawnSync(process.execPath, [
   '--import', `data:text/javascript,${encodeURIComponent(mock)}`, fileURLToPath(entry)
 ], {env: {...process.env, SOURCE_SNAPSHOT:snapshotPath}, encoding:'utf8'});
 
+test('production preparation persists its source cache and writes the validated shared snapshot', async () => {
+  const dir=await mkdtemp(join(tmpdir(),'source-persistent-'));
+  const path=join(dir,'source.json');
+  try {
+    const mock=`let writes=0,requests=0;
+      globalThis.fetch=async(url,init)=>{
+        if(url.startsWith('https://api.github.com/')) {
+          if(init.method==='PUT') { writes++; return new Response(JSON.stringify({content:{sha:'saved-'+writes}})); }
+          if(url.includes('/git/ref/')) return new Response('{}');
+          return new Response('',{status:404});
+        }
+        if(writes!==1) throw Error('source requested before reservation');
+        requests++;
+        const now=new Date().toISOString();
+        return new Response(JSON.stringify({schemaVersion:1,checkedAt:now,monitor:{status:'healthy',lastCollectedAt:now},events:[],activities:[]}));
+      };
+      process.on('exit',()=>{if(writes!==2||requests!==1)process.exitCode=9;});`;
+    const result=spawnSync(process.execPath,['--import',
+      `data:text/javascript,${encodeURIComponent(mock)}`,fileURLToPath(entry)],
+    {env:{...process.env,SOURCE_CACHE:'github',SOURCE_SNAPSHOT:path,GITHUB_REPOSITORY:'example/repo',GITHUB_TOKEN:'placeholder'},encoding:'utf8'});
+    assert.equal(result.status,0,result.stderr);
+    assert.match(result.stdout,/full history snapshot downloaded/);
+    assert.equal(JSON.parse(await readFile(path,'utf8')).schemaVersion,1);
+  } finally {await rm(dir,{recursive:true,force:true});}
+});
+
 test('delayed source prepares all channels with a visible warning, while stale delayed data fails', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'source-delayed-'));
   try {
