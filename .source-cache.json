@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "status": "pending",
+  "status": "ready",
   "source": "https://aihot.news/api/v1/codex-resets/recent",
   "data": {
     "schemaVersion": 1,
     "timezone": "Asia/Shanghai",
     "today": "2026-11-13",
-    "checkedAt": "2026-11-13T09:50:12.865+08:00",
+    "checkedAt": "2026-11-13T10:00:12.870+08:00",
     "historyFrom": "2026-11-06T00:00:00.000+08:00",
     "count": 1,
     "events": [
@@ -17,7 +17,7 @@
         "displayLabel": "重置卡发放",
         "presentation": {
           "reportedAt": "2026-11-13T05:59:39.000+08:00",
-          "status": "in_progress",
+          "status": "expired_unconfirmed",
           "scopeKnown": false,
           "scopeLabel": null,
           "kindExplicit": true,
@@ -33,7 +33,7 @@
           "reason": "模型推算：发帖称重置卡已激活、很快到账，参考以往下发多在数小时内完成，给出约 1–4 小时的窗口。"
         },
         "status": "announced",
-        "title": "重置卡正在发放",
+        "title": "Tibo 预告将发放重置卡",
         "scope": "",
         "createdAt": "2026-11-11T14:57:08.000+08:00",
         "updatedAt": "2026-11-13T05:59:39.000+08:00",
@@ -180,16 +180,16 @@
     ],
     "monitor": {
       "status": "healthy",
-      "lastAttemptAt": "2026-11-13T09:50:12.865+08:00",
-      "lastCollectedAt": "2026-11-13T09:50:12.865+08:00",
-      "lastVerifiedAt": "2026-11-13T09:50:12.865+08:00",
+      "lastAttemptAt": "2026-11-13T10:00:12.870+08:00",
+      "lastCollectedAt": "2026-11-13T10:00:12.870+08:00",
+      "lastVerifiedAt": "2026-11-13T10:00:12.870+08:00",
       "heldWindowCount": 0,
       "pendingCount": 0,
       "reviewCount": 0
     },
     "outage": null
   },
-  "etag": "W/\"v1-codex-resets-recent-172008ad59dc50ca\"",
-  "lastSuccessAt": 1794534971582,
-  "nextRequestAt": 1794536171586
+  "etag": "W/\"v1-codex-resets-recent-b1fbbb68a29722c3\"",
+  "lastSuccessAt": 1794535573384,
+  "nextRequestAt": 1794536173384
 }
