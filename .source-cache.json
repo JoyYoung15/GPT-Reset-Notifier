@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "ready",
+  "status": "pending",
   "source": "https://aihot.news/api/v1/codex-resets/recent",
   "data": {
     "schemaVersion": 1,
@@ -191,5 +191,5 @@
   },
   "etag": "W/\"v1-codex-resets-recent-b8bcb847e057247d\"",
   "lastSuccessAt": 1794603983107,
-  "nextRequestAt": 1794604583107
+  "nextRequestAt": 1794605183125
 }
