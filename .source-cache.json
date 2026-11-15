@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "status": "pending",
+  "status": "ready",
   "source": "https://aihot.news/api/v1/codex-resets/recent",
   "data": {
     "schemaVersion": 1,
     "timezone": "Asia/Shanghai",
-    "today": "2026-11-15",
-    "checkedAt": "2026-11-15T23:50:32.208+08:00",
-    "historyFrom": "2026-11-08T00:00:00.000+08:00",
+    "today": "2026-11-16",
+    "checkedAt": "2026-11-16T00:00:32.203+08:00",
+    "historyFrom": "2026-11-09T00:00:00.000+08:00",
     "count": 1,
     "events": [
       {
@@ -154,42 +154,20 @@
         "statusChanged": false,
         "action": null,
         "url": "https://x.com/thsottiaux/status/2120410006273380750"
-      },
-      {
-        "id": "2119308687676432672",
-        "author": "thsottiaux",
-        "publishedAt": "2026-11-08T13:59:00.000+08:00",
-        "eventIds": [],
-        "kind": "related",
-        "text": "@ForwardEditor 我们曾犹豫要不要把 https://x.com 嵌进 codex 应用里，好搞明白那些重置是怎么回事，但最后还是决定不做。",
-        "originalText": "@ForwardEditor We hesitated to embed https://x.com into the codex app to make sense of the resets, but decided against it.",
-        "context": [
-          {
-            "id": "2119185994326905218",
-            "author": "ForwardEditor",
-            "relation": "reply",
-            "text": "我觉得，要想对 AI 的动向有任何一点头绪，就必须得有个 X 账号；而且我也搞不懂，你的 Codex 用量为什么老是莫名其妙地被重置。",
-            "originalText": "I feel like it's necessary to have an X account to have ANY clue what's going on with AI and also why tf your Codex usage keeps getting reset randomly",
-            "url": "https://x.com/i/status/2119185994326905218"
-          }
-        ],
-        "statusChanged": false,
-        "action": null,
-        "url": "https://x.com/thsottiaux/status/2119308687676432672"
       }
     ],
     "monitor": {
       "status": "healthy",
-      "lastAttemptAt": "2026-11-15T23:50:32.208+08:00",
-      "lastCollectedAt": "2026-11-15T23:50:32.208+08:00",
-      "lastVerifiedAt": "2026-11-15T23:50:32.208+08:00",
+      "lastAttemptAt": "2026-11-16T00:00:32.203+08:00",
+      "lastCollectedAt": "2026-11-16T00:00:32.203+08:00",
+      "lastVerifiedAt": "2026-11-16T00:00:32.203+08:00",
       "heldWindowCount": 0,
       "pendingCount": 0,
       "reviewCount": 0
     },
     "outage": null
   },
-  "etag": "W/\"v1-codex-resets-recent-8db54de183c9f2da\"",
-  "lastSuccessAt": 1794758456623,
-  "nextRequestAt": 1794759656626
+  "etag": "W/\"v1-codex-resets-recent-42065810b91dbff1\"",
+  "lastSuccessAt": 1794759059304,
+  "nextRequestAt": 1794759659304
 }
