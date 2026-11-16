@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "status": "pending",
+  "status": "ready",
   "source": "https://aihot.news/api/v1/codex-resets/recent",
   "data": {
     "schemaVersion": 1,
     "timezone": "Asia/Shanghai",
     "today": "2026-11-16",
-    "checkedAt": "2026-11-16T13:50:43.873+08:00",
+    "checkedAt": "2026-11-16T14:00:43.871+08:00",
     "historyFrom": "2026-11-09T00:00:00.000+08:00",
     "count": 1,
     "events": [
@@ -95,6 +95,19 @@
     ],
     "activities": [
       {
+        "id": "2122206990101536852",
+        "author": "thsottiaux",
+        "publishedAt": "2026-11-16T13:55:49.000+08:00",
+        "eventIds": [],
+        "kind": "related",
+        "text": "Codex 团队可能真的已经修复了一直困扰你的“模型容量已满”错误。",
+        "originalText": "Codex team might have actually fixed the \"model at capacity\" errors that have been pestering you.",
+        "context": [],
+        "statusChanged": false,
+        "action": null,
+        "url": "https://x.com/thsottiaux/status/2122206990101536852"
+      },
+      {
         "id": "2120999993079451919",
         "author": "thsottiaux",
         "publishedAt": "2026-11-13T05:59:39.000+08:00",
@@ -158,16 +171,16 @@
     ],
     "monitor": {
       "status": "healthy",
-      "lastAttemptAt": "2026-11-16T13:50:43.873+08:00",
-      "lastCollectedAt": "2026-11-16T13:50:43.873+08:00",
-      "lastVerifiedAt": "2026-11-16T13:50:43.873+08:00",
+      "lastAttemptAt": "2026-11-16T14:00:43.871+08:00",
+      "lastCollectedAt": "2026-11-16T14:00:43.871+08:00",
+      "lastVerifiedAt": "2026-11-16T14:00:43.871+08:00",
       "heldWindowCount": 0,
       "pendingCount": 0,
       "reviewCount": 0
     },
     "outage": null
   },
-  "etag": "W/\"v1-codex-resets-recent-06ea2ae2f1e1a328\"",
-  "lastSuccessAt": 1794808865260,
-  "nextRequestAt": 1794810065263
+  "etag": "W/\"v1-codex-resets-recent-0c8335a134d9f908\"",
+  "lastSuccessAt": 1794809467099,
+  "nextRequestAt": 1794810067099
 }
