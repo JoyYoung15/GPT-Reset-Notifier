@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "status": "pending",
+  "status": "ready",
   "source": "https://aihot.news/api/v1/codex-resets/recent",
   "data": {
     "schemaVersion": 1,
     "timezone": "Asia/Shanghai",
     "today": "2026-11-18",
-    "checkedAt": "2026-11-18T20:50:16.018+08:00",
+    "checkedAt": "2026-11-18T21:10:16.029+08:00",
     "historyFrom": "2026-11-11T00:00:00.000+08:00",
     "count": 1,
     "events": [
@@ -171,16 +171,16 @@
     ],
     "monitor": {
       "status": "healthy",
-      "lastAttemptAt": "2026-11-18T20:50:16.018+08:00",
-      "lastCollectedAt": "2026-11-18T20:50:16.018+08:00",
-      "lastVerifiedAt": "2026-11-18T20:50:16.018+08:00",
+      "lastAttemptAt": "2026-11-18T21:10:16.029+08:00",
+      "lastCollectedAt": "2026-11-18T21:10:16.029+08:00",
+      "lastVerifiedAt": "2026-11-18T21:10:16.029+08:00",
       "heldWindowCount": 0,
       "pendingCount": 0,
       "reviewCount": 0
     },
     "outage": null
   },
-  "etag": "W/\"v1-codex-resets-recent-1a9aac387f760aea\"",
-  "lastSuccessAt": 1795006885705,
-  "nextRequestAt": 1795008354055
+  "etag": "W/\"v1-codex-resets-recent-632ba9124d1b854d\"",
+  "lastSuccessAt": 1795007757664,
+  "nextRequestAt": 1795008357664
 }
