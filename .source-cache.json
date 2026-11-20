@@ -1,98 +1,15 @@
 {
   "version": 1,
-  "status": "pending",
+  "status": "ready",
   "source": "https://aihot.news/api/v1/codex-resets/recent",
   "data": {
     "schemaVersion": 1,
     "timezone": "Asia/Shanghai",
-    "today": "2026-11-20",
-    "checkedAt": "2026-11-20T23:40:38.500+08:00",
-    "historyFrom": "2026-11-13T00:00:00.000+08:00",
-    "count": 1,
-    "events": [
-      {
-        "id": "banked-2120410480204525936-1-1",
-        "type": "reset_credit",
-        "label": "发重置卡",
-        "displayLabel": "重置卡发放",
-        "presentation": {
-          "reportedAt": "2026-11-13T05:59:39.000+08:00",
-          "status": "likely_completed",
-          "scopeKnown": false,
-          "scopeLabel": null,
-          "kindExplicit": true,
-          "timeInferred": false,
-          "audienceZh": null,
-          "productsZh": "Codex"
-        },
-        "estimate": {
-          "from": "2026-11-13T07:00:00.000+08:00",
-          "through": "2026-11-13T10:00:00.000+08:00",
-          "basis": "model",
-          "label": "北京时间 11月13日 07:00–10:00",
-          "reason": "模型推算：发帖称重置卡已激活、很快到账，参考以往下发多在数小时内完成，给出约 1–4 小时的窗口。"
-        },
-        "status": "announced",
-        "title": "重置卡已发放",
-        "scope": "",
-        "createdAt": "2026-11-11T14:57:08.000+08:00",
-        "updatedAt": "2026-11-13T05:59:39.000+08:00",
-        "confirmedAt": null,
-        "occurredOn": null,
-        "confirmationBasis": null,
-        "schedule": {
-          "precision": "approximate",
-          "from": "2026-11-13T06:59:00.000+08:00",
-          "through": "2026-11-13T06:59:00.000+08:00",
-          "label": "北京时间约 11月13日 06:59"
-        },
-        "posts": [
-          {
-            "id": "2120999993079451919",
-            "author": "thsottiaux",
-            "publishedAt": "2026-11-13T05:59:39.000+08:00",
-            "stage": "进展",
-            "text": "我们今天为 dots 发布了一些不错的更新，banked 重置卡已经激活，应该很快会到每个人的账户里！",
-            "originalText": "We shipped some good updates to dots today and the banked reset has been activated and should land in everyones accounts sometime soon!",
-            "fullText": "我们今天为 dots 发布了一些不错的更新，banked 重置卡已经激活，应该很快会到每个人的账户里！",
-            "fullOriginalText": "We shipped some good updates to dots today and the banked reset has been activated and should land in everyones accounts sometime soon!",
-            "context": [
-              {
-                "id": "2120970988796170275",
-                "author": "ChatGPT",
-                "relation": "quote",
-                "text": "你的 dot 现在可以……\n\n⚡️ 更快的回复\n💬 更少的术语\n🫡 更好的跟进执行\n\n而且，它们现在可以遵循你的自定义指令。在对话串里告诉你的 dot 诸如该如何表现，或哪些操作需要你先批准。\n\n“始终用小写说话。”\n“发送任何邮件前先给我看草稿。”\n\n你也可以在移动端的 Customize > Behavior 中，或通过网页端和桌面端 dot 的菜单，设置自定义指令和规则。",
-                "originalText": "Your dot now has…\n\n⚡️ Faster replies\n💬 Less jargon\n🫡 Better follow-through\n\nAnd, they can now follow your custom instructions. Tell your dot in the thread things like how to behave or which actions need your go-ahead.\n\n“always talk in lowercase.”\n“Show me a draft before sending any emails.”\n\nYou can also set custom instructions and rules in Customize > Behavior on mobile, or through your dot’s menu on web and desktop.",
-                "url": "https://x.com/i/status/2120970988796170275"
-              }
-            ],
-            "url": "https://x.com/thsottiaux/status/2120999993079451919"
-          },
-          {
-            "id": "2120410480204525936",
-            "author": "thsottiaux",
-            "publishedAt": "2026-11-11T14:57:08.000+08:00",
-            "stage": "发卡预告",
-            "text": "对我来说，周四很有 Codex 的感觉。也许也是发放一张预留重置卡的好时机。",
-            "originalText": "Thursday is feeling codexy to me. Perhaps also a good time for a banked reset.",
-            "fullText": "对我来说，周四很有 Codex 的感觉。也许也是发放一张预留重置卡的好时机。",
-            "fullOriginalText": "Thursday is feeling codexy to me. Perhaps also a good time for a banked reset.",
-            "context": [
-              {
-                "id": "2120410006273380750",
-                "author": "thsottiaux",
-                "relation": "reply",
-                "text": "已经有一阵子没有重置了。也许我该从地下室出来了。",
-                "originalText": "It’s been a while without resets. Maybe I should come back out of the basement",
-                "url": "https://x.com/i/status/2120410006273380750"
-              }
-            ],
-            "url": "https://x.com/thsottiaux/status/2120410480204525936"
-          }
-        ],
-        "url": "https://aihot.news/codex-reset"
-      }
-    ],
+    "today": "2026-11-21",
+    "checkedAt": "2026-11-20T23:50:38.520+08:00",
+    "historyFrom": "2026-11-14T00:00:00.000+08:00",
+    "count": 0,
+    "events": [],
     "activities": [
       {
         "id": "2122206990101536852",
@@ -106,44 +23,20 @@
         "statusChanged": false,
         "action": null,
         "url": "https://x.com/thsottiaux/status/2122206990101536852"
-      },
-      {
-        "id": "2120999993079451919",
-        "author": "thsottiaux",
-        "publishedAt": "2026-11-13T05:59:39.000+08:00",
-        "eventIds": [
-          "banked-2120410480204525936-1-1"
-        ],
-        "kind": "event_update",
-        "text": "我们今天为 dots 发布了一些不错的更新，banked 重置卡已经激活，应该很快会到每个人的账户里！",
-        "originalText": "We shipped some good updates to dots today and the banked reset has been activated and should land in everyones accounts sometime soon!",
-        "context": [
-          {
-            "id": "2120970988796170275",
-            "author": "ChatGPT",
-            "relation": "quote",
-            "text": "你的 dot 现在可以……\n\n⚡️ 更快的回复\n💬 更少的术语\n🫡 更好的跟进执行\n\n而且，它们现在可以遵循你的自定义指令。在对话串里告诉你的 dot 诸如该如何表现，或哪些操作需要你先批准。\n\n“始终用小写说话。”\n“发送任何邮件前先给我看草稿。”\n\n你也可以在移动端的 Customize > Behavior 中，或通过网页端和桌面端 dot 的菜单，设置自定义指令和规则。",
-            "originalText": "Your dot now has…\n\n⚡️ Faster replies\n💬 Less jargon\n🫡 Better follow-through\n\nAnd, they can now follow your custom instructions. Tell your dot in the thread things like how to behave or which actions need your go-ahead.\n\n“always talk in lowercase.”\n“Show me a draft before sending any emails.”\n\nYou can also set custom instructions and rules in Customize > Behavior on mobile, or through your dot’s menu on web and desktop.",
-            "url": "https://x.com/i/status/2120970988796170275"
-          }
-        ],
-        "statusChanged": true,
-        "action": null,
-        "url": "https://x.com/thsottiaux/status/2120999993079451919"
       }
     ],
     "monitor": {
       "status": "healthy",
-      "lastAttemptAt": "2026-11-20T23:40:38.500+08:00",
-      "lastCollectedAt": "2026-11-20T23:40:38.500+08:00",
-      "lastVerifiedAt": "2026-11-20T23:40:38.500+08:00",
+      "lastAttemptAt": "2026-11-20T23:50:38.520+08:00",
+      "lastCollectedAt": "2026-11-20T23:50:38.520+08:00",
+      "lastVerifiedAt": "2026-11-20T23:50:38.520+08:00",
       "heldWindowCount": 0,
       "pendingCount": 0,
       "reviewCount": 0
     },
     "outage": null
   },
-  "etag": "W/\"v1-codex-resets-recent-d8640f098c28108d\"",
-  "lastSuccessAt": 1795189873902,
-  "nextRequestAt": 1795191073909
+  "etag": "W/\"v1-codex-resets-recent-331741974e499d7c\"",
+  "lastSuccessAt": 1795190475854,
+  "nextRequestAt": 1795191075854
 }
