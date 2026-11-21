@@ -18,9 +18,10 @@ export async function prepareCachedSource(storage, {
     throw new Error('Invalid source cache; refusing to bypass polling interval.');
   }
   if (previous && started < previous.nextRequestAt) {
-    // Small runner jitter should not turn a ten-minute poll into fifteen minutes.
+    // Small runner jitter should not turn a ten-minute poll into fifteen minutes,
+    // including recovery after a failed fetch. Always wait out the reservation.
     const remaining = previous.nextRequestAt - started;
-    if (previous.status === 'ready' && remaining <= 30000) {
+    if (remaining <= 30000) {
       await sleep(remaining);
       started = now();
     }

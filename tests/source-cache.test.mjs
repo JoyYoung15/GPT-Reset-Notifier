@@ -113,6 +113,22 @@ test('small scheduler jitter waits until eligible; retries cannot shorten the ne
   assert.equal(h.storage.state.nextRequestAt,h.time+POLL_INTERVAL);
 });
 
+test('failed and interrupted source reservations wait out small jitter before recovery', async () => {
+  for (const status of ['failed','pending']) {
+    const h=harness(); let calls=0;
+    h.storage.state={version:1,status,lastSuccessAt:initial-60000,nextRequestAt:initial+5000};
+    await prepareCachedSource(h.storage,{...h.opts,fetcher:async()=>{
+      assert.equal(h.time,initial+5000);
+      calls++;
+      return new Response(JSON.stringify(data(h.time)));
+    }});
+    assert.deepEqual(h.waits,[5000]);
+    assert.equal(calls,1);
+    assert.equal(h.storage.state.status,'ready');
+    assert.equal(h.storage.state.nextRequestAt,h.time+POLL_INTERVAL);
+  }
+});
+
 test('workflow enables persistent source cache only for preparation, with repository token', async () => {
   const workflow=await readFile(new URL('../.github/workflows/wechat.yml',import.meta.url),'utf8');
   const preparation=workflow.split('- name: Prepare shared source')[1].split('- name: Check source')[0];
