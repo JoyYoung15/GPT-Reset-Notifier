@@ -1,16 +1,46 @@
 {
   "version": 1,
-  "status": "pending",
+  "status": "ready",
   "source": "https://aihot.news/api/v1/codex-resets/recent",
   "data": {
     "schemaVersion": 1,
     "timezone": "Asia/Shanghai",
     "today": "2026-11-21",
-    "checkedAt": "2026-11-21T05:20:15.234+08:00",
+    "checkedAt": "2026-11-21T22:10:26.381+08:00",
     "historyFrom": "2026-11-14T00:00:00.000+08:00",
     "count": 0,
     "events": [],
     "activities": [
+      {
+        "id": "2123890243409752342",
+        "author": "ajambrosino",
+        "publishedAt": "2026-11-21T05:24:28.000+08:00",
+        "eventIds": [],
+        "kind": "related",
+        "text": "@akshaynathan_ 重置？",
+        "originalText": "@akshaynathan_ reset?",
+        "context": [
+          {
+            "id": "2123859713163206997",
+            "author": "akshaynathan_",
+            "relation": "reply",
+            "text": "@ajambrosino 你好，世界",
+            "originalText": "@ajambrosino hello world",
+            "url": "https://x.com/i/status/2123859713163206997"
+          },
+          {
+            "id": "2123858913330393323",
+            "author": "ajambrosino",
+            "relation": "reply",
+            "text": "@akshaynathan_ 哇，你来了",
+            "originalText": "@akshaynathan_ whoa you’re here",
+            "url": "https://x.com/i/status/2123858913330393323"
+          }
+        ],
+        "statusChanged": false,
+        "action": null,
+        "url": "https://x.com/ajambrosino/status/2123890243409752342"
+      },
       {
         "id": "2122206990101536852",
         "author": "thsottiaux",
@@ -27,16 +57,16 @@
     ],
     "monitor": {
       "status": "healthy",
-      "lastAttemptAt": "2026-11-21T05:20:15.234+08:00",
-      "lastCollectedAt": "2026-11-21T05:20:15.234+08:00",
-      "lastVerifiedAt": "2026-11-21T05:20:15.234+08:00",
+      "lastAttemptAt": "2026-11-21T22:10:26.381+08:00",
+      "lastCollectedAt": "2026-11-21T22:10:26.381+08:00",
+      "lastVerifiedAt": "2026-11-21T22:10:26.381+08:00",
       "heldWindowCount": 0,
       "pendingCount": 0,
       "reviewCount": 0
     },
     "outage": null
   },
-  "etag": "W/\"v1-codex-resets-recent-00cd2a8925101a44\"",
-  "lastSuccessAt": 1795209974503,
-  "nextRequestAt": 1795271159607
+  "etag": "W/\"v1-codex-resets-recent-23732e92f79c857b\"",
+  "lastSuccessAt": 1795270561530,
+  "nextRequestAt": 1795271161530
 }
