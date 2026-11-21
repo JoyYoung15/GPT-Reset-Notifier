@@ -13,7 +13,13 @@ const hash = value => createHash('sha256').update(value).digest('hex');
 const date = value => Number.isFinite(Date.parse(value));
 const shanghaiDay = now => new Date(now + 8 * 3600000).toISOString().slice(0, 10);
 const displayTime = value => new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
-const sourceURL = (url, id) => url === `https://x.com/thsottiaux/status/${id}`;
+const AUTHORS = { thsottiaux: 'Tibo', ajambrosino: 'Andrew' };
+
+function sourceAuthor(post) {
+  const match = /^https:\/\/x\.com\/(thsottiaux|ajambrosino)\/status\/(\d+)$/.exec(post.url);
+  if (!match || match[2] !== post.id || (post.author != null && post.author !== match[1])) return null;
+  return match[1];
+}
 
 export function monitorStatus(value) {
   if (value == null) return 'missing';
@@ -33,7 +39,7 @@ export function validate(data, now = Date.now()) {
   const ids = new Set();
   for (const p of data.activities) {
     if (!/^\d+$/.test(p.id) || ids.has(p.id) || !date(p.publishedAt)
-        || !sourceURL(p.url, p.id) || !Array.isArray(p.eventIds)
+        || !sourceAuthor(p) || !Array.isArray(p.eventIds)
         || typeof p.originalText !== 'string'
         || (p.text != null && typeof p.text !== 'string')) throw new Error('Invalid source post fields; checkpoint unchanged.');
     ids.add(p.id);
@@ -54,14 +60,16 @@ export async function loadSource(snapshotPath = process.env.SOURCE_SNAPSHOT, fet
 export function signals(data) {
   const events = new Map(data.events.map(e => [e.id, e]));
   return data.activities.flatMap(p => {
+    const author = sourceAuthor(p);
+    if (!author) return [];
     let action = p.kind === 'event_update' && p.eventIds.some(id => events.has(id)) && ACTIONS[p.action] ? p.action : null;
-    // Only explicit tentative statements in Tibo's own text; never classify quoted user wishes.
+    // Only explicit tentative statements in a supported author's own text; never classify user wishes.
     if (!action && /\b(might|may|maybe|possibly|considering)\b[^.!?\n]{0,70}\b(reset|resets)\b/i.test(p.originalText)
         && !/\?|\b(people|asking|asked|wish|requests?)\b/i.test(p.originalText)) action = 'hint';
     if (!action) return [];
     const event = p.eventIds.map(id => events.get(id)).find(Boolean);
     const identity = `${p.id}:${action}`;
-    return [{ ...p, text: p.text ?? p.originalText, action, event, identity, sourceAttention: data.monitor?.status === 'attention', sourceDelayed: data.monitor?.status === 'delayed', fingerprint: hash(`${identity}:${p.originalText}`) }];
+    return [{ ...p, author, text: p.text ?? p.originalText, action, event, identity, sourceAttention: data.monitor?.status === 'attention', sourceDelayed: data.monitor?.status === 'delayed', fingerprint: hash(`${identity}:${p.originalText}`) }];
   }).sort((a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt));
 }
 
@@ -101,7 +109,7 @@ export function message(items) {
       + `发布：${displayTime(p.publishedAt)}（北京时间）\n\n`
       + `范围：${scope || '原始信息未明确，不能视为所有账户适用'}\n\n`
       + `预计时间：以本条原文时间表述为准；未提供时不推算。\n\n`
-      + `[Tibo 原帖](${p.url})\n\n原文：${p.originalText.slice(0, 1800)}`;
+      + `[${AUTHORS[sourceAuthor(p)]} 原帖](${p.url})\n\n原文：${p.originalText.slice(0, 1800)}`;
   }).join('\n\n---\n\n') + '\n\n来源：AIHOT 第三方整理（https://aihot.news/codex-reset），程序未直接核验 X。预告不等于已经到账，具体额度请查看自己的账户。'
     + (items.some(p => p.sourceAttention) ? '\n\n来源状态：attention（需关注）。本条来自接口公开记录；该状态未指明哪些帖子需复核，请结合原帖判断。' : '')
     + (items.some(p => p.sourceDelayed) ? '\n\n来源状态：delayed（采集延迟）。本条来自接口已公开记录，最新消息可能尚未完整收录；此状态不代表重置已发生或被推迟。' : '');
@@ -174,7 +182,7 @@ export async function main() {
   const send = (title, desp) => sendServerChan(key, title, desp);
   if (baseline || JSON.stringify(state) !== JSON.stringify(storage.state)) await storage.save(state);
   if (process.env.SEND_TEST === 'true') {
-    const ok = await deliver(state, [], storage.save, () => send('【测试】GPT 重置微信提醒已接通', '这是一条配置测试，不代表发生了重置。\n\nGitHub Actions 已读取消息接口；首次运行只建立历史基线，后续有新的预告、确认或更正时才推送。\n\n来源覆盖：AIHOT 整理的 Tibo 消息。'), true);
+    const ok = await deliver(state, [], storage.save, () => send('【测试】GPT 重置微信提醒已接通', '这是一条配置测试，不代表发生了重置。\n\nGitHub Actions 已读取消息接口；首次运行只建立历史基线，后续有新的预告、确认或更正时才推送。\n\n来源覆盖：AIHOT 整理的 Tibo 和 Andrew 消息。'), true);
     if (!ok) throw new Error('Daily test allowance exhausted.');
     console.log('Test accepted by ServerChan. Confirm receipt on your phone.');
     return;

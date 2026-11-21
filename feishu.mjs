@@ -67,7 +67,7 @@ export async function main() {
     try {
       await sendFeishu(config,
         isTest ? channel.testTitle : 'GPT/Codex 重置动态',
-        isTest ? '这是一条配置测试，不代表发生重置。后续发现新的符合条件的 Tibo 消息时推送，无新消息保持安静。来源：AIHOT 第三方整理。' : message(batch));
+        isTest ? '这是一条配置测试，不代表发生重置。后续发现新的符合条件的 Tibo 和 Andrew 消息时推送，无新消息保持安静。来源：AIHOT 第三方整理。' : message(batch));
     } catch (error) { sendError = error; throw error; }
   }, isTest).catch(error => {
     const stateError = error instanceof StateRequestError ? error : error.cause instanceof StateRequestError ? error.cause : null;
