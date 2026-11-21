@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "pending",
+  "status": "ready",
   "source": "https://aihot.news/api/v1/codex-resets/recent",
   "data": {
     "schemaVersion": 1,
@@ -57,7 +57,7 @@
     ],
     "monitor": {
       "status": "healthy",
-      "lastAttemptAt": "2026-11-22T00:10:14.482+08:00",
+      "lastAttemptAt": "2026-11-22T00:20:40.797+08:00",
       "lastCollectedAt": "2026-11-22T00:10:14.482+08:00",
       "lastVerifiedAt": "2026-11-22T00:10:14.482+08:00",
       "heldWindowCount": 0,
@@ -66,7 +66,7 @@
     },
     "outage": null
   },
-  "etag": "W/\"v1-codex-resets-recent-55d5555bc4bf63b3\"",
-  "lastSuccessAt": 1795278063987,
-  "nextRequestAt": 1795279263989
+  "etag": "W/\"v1-codex-resets-recent-ad31ee6a17ad1eae\"",
+  "lastSuccessAt": 1795278666415,
+  "nextRequestAt": 1795279266415
 }
