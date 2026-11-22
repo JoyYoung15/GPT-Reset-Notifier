@@ -29,6 +29,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   check:
+    # Temporarily paused at owner's request. Remove this condition to resume.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
